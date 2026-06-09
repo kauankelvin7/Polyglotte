@@ -62,7 +62,7 @@ const HeroCarousel = ({ items, onSelect }) => {
             </span>
           </div>
 
-          <p className="text-white/80 text-sm md:text-lg line-clamp-3 mb-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] max-w-2xl leading-relaxed">
+          <p className="text-white/80 text-sm md:text-lg line-clamp-5 md:line-clamp-none mb-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] max-w-2xl leading-relaxed">
             {currentItem.overview || 'Uma jornada incrível aguarda por você no Polyglotte.'}
           </p>
 

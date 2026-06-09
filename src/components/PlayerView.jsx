@@ -15,6 +15,7 @@ const PlayerView = ({ media, onClose, onPlay }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showNextEpisode, setShowNextEpisode] = useState(false);
   const [provider, setProvider] = useState(PROVIDERS.SUPERFLIX);
+  const [subVisibility, setSubVisibility] = useState({ en: true, pt: true });
   
   const [subtitleData, setSubtitleData] = useState({
     en: "Carregando legendas inteligentes...",
@@ -184,6 +185,25 @@ const PlayerView = ({ media, onClose, onPlay }) => {
             <button onClick={() => setShowSettings(false)} className="text-white/50 hover:text-white"><X className="w-5 h-5"/></button>
           </div>
 
+          {/* Exibição de Legendas Section */}
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-pg-muted">Exibição de Legendas</p>
+            <div className="flex items-center justify-between glass py-2 px-4 rounded-xl">
+              <span className="text-sm text-white">Inglês (EN)</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" checked={subVisibility.en} onChange={() => setSubVisibility(prev => ({...prev, en: !prev.en}))} />
+                <div className="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+              </label>
+            </div>
+            <div className="flex items-center justify-between glass py-2 px-4 rounded-xl">
+              <span className="text-sm text-white">Português (PT)</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" checked={subVisibility.pt} onChange={() => setSubVisibility(prev => ({...prev, pt: !prev.pt}))} />
+                <div className="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+              </label>
+            </div>
+          </div>
+
           {/* Servidor Section */}
           <div className="flex flex-col gap-3">
             <p className="text-sm text-pg-muted">Servidor de Vídeo</p>
@@ -311,7 +331,7 @@ const PlayerView = ({ media, onClose, onPlay }) => {
 
       {/* Barra Inferior de Legendas Bilíngues */}
       <div className="h-24 md:h-32 bg-pg-surface border-t border-pg-border flex flex-col items-center justify-center px-4 flex-shrink-0 relative">
-        <SubtitleOverlay subtitleData={subtitleData} />
+        <SubtitleOverlay subtitleData={subtitleData} visibility={subVisibility} />
         
         {/* Floating Auto-Sync Quick Action Button */}
         <button 

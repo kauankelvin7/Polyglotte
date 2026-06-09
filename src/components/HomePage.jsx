@@ -4,6 +4,7 @@ import SearchBar from './SearchBar';
 import CatalogRow from './CatalogRow';
 import HeroCarousel from './HeroCarousel';
 import Footer from './Footer';
+import HelpModal from './HelpModal';
 import { tmdbService } from '../config/tmdb';
 import { getHistory, removeProgress } from '../config/storage';
 
@@ -38,6 +39,7 @@ const HomePage = ({ onSelect }) => {
 
   return (
     <div className="w-screen h-screen overflow-y-auto overflow-x-hidden bg-transparent flex flex-col relative scrollbar-hide">
+      <HelpModal />
       {/* Navbar Superior Glassmorphism */}
       <div className="absolute top-0 left-0 w-full z-50 px-6 sm:px-12 py-6 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none">
         <div className="pointer-events-auto scale-90 sm:scale-100 origin-left">

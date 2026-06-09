@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 
-const SubtitleOverlay = ({ subtitleData }) => {
+const SubtitleOverlay = ({ subtitleData, visibility = { en: true, pt: true } }) => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (subtitleData?.en) {
+    if (subtitleData?.en || subtitleData?.pt) {
       setVisible(false);
       const t = setTimeout(() => setVisible(true), 80);
       return () => clearTimeout(t);
     }
-  }, [subtitleData?.en]);
+  }, [subtitleData?.en, subtitleData?.pt]);
 
-  if (!subtitleData?.en) return null;
+  if (!subtitleData?.en && !subtitleData?.pt) return null;
 
   // Função para limpar tags HTML comuns em arquivos SRT (<i>, <b>, <font>, etc.)
   const cleanText = (text) => {
@@ -28,14 +28,18 @@ const SubtitleOverlay = ({ subtitleData }) => {
       `}
     >
       {/* Linha primária — EN */}
-      <p className="text-xl md:text-3xl font-display font-bold text-white mb-1 md:mb-2 leading-snug drop-shadow-md">
-        {cleanText(subtitleData.en)}
-      </p>
+      {visibility.en && subtitleData?.en && (
+        <p className="text-xl md:text-3xl font-display font-bold text-white mb-1 md:mb-2 leading-snug drop-shadow-md">
+          {cleanText(subtitleData.en)}
+        </p>
+      )}
 
       {/* Linha secundária — PT */}
-      <p className="text-sm md:text-lg font-sans font-normal text-slate-400 tracking-wide drop-shadow-md">
-        {cleanText(subtitleData.pt)}
-      </p>
+      {visibility.pt && subtitleData?.pt && (
+        <p className="text-sm md:text-lg font-sans font-normal text-slate-400 tracking-wide drop-shadow-md">
+          {cleanText(subtitleData.pt)}
+        </p>
+      )}
     </div>
   );
 };
