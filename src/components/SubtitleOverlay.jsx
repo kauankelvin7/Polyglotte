@@ -4,32 +4,52 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 const wordCache = {};
 
 /**
+ * Traduz um texto EN→PT usando o endpoint informal do Google Translate.
+ * Muito mais preciso que MyMemory para palavras isoladas e expressões curtas.
+ */
+async function googleTranslate(text, targetLang = 'pt') {
+  try {
+    const url =
+      `https://translate.googleapis.com/translate_a/single` +
+      `?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    if (!res.ok) return '';
+    const json = await res.json();
+    // Estrutura: [[["translated","original",...]], ...]
+    // Concatena todos os segmentos traduzidos (frases longas podem ser quebradas)
+    const translated = json?.[0]
+      ?.map((seg) => seg?.[0] ?? '')
+      .join('')
+      .trim();
+    return translated && translated.toLowerCase() !== text.toLowerCase()
+      ? translated
+      : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+/**
  * Busca dados reais de uma palavra:
- * 1. Free Dictionary API → definição, fonética, classe gramatical, exemplos em inglês
- * 2. MyMemory API         → tradução EN→PT
+ * 1. Free Dictionary API    → fonética, classe gramatical, exemplos em inglês
+ * 2. Google Translate (gtx) → tradução EN→PT precisa (palavra + exemplos)
  */
 async function fetchWordData(word) {
   const key = word.toLowerCase();
 
   if (wordCache[key]) return wordCache[key];
 
-  // Busca paralela: dicionário + tradução
-  const [dictRes, transRes] = await Promise.allSettled([
+  // Busca paralela: dicionário EN + tradução da palavra
+  const [dictRes, wordTranslation] = await Promise.allSettled([
     fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(key)}`),
-    fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(key)}&langpair=en|pt-BR`),
+    googleTranslate(key),
   ]);
 
   // ── Tradução PT-BR ──────────────────────────────────────────────────────────
-  let translation = '(tradução indisponível)';
-  if (transRes.status === 'fulfilled' && transRes.value.ok) {
-    try {
-      const transJson = await transRes.value.json();
-      const raw = transJson?.responseData?.translatedText;
-      if (raw && raw !== key && !/ERROR/.test(raw)) {
-        translation = raw;
-      }
-    } catch (_) { /* silencioso */ }
-  }
+  let translation =
+    wordTranslation.status === 'fulfilled' && wordTranslation.value
+      ? wordTranslation.value
+      : '(tradução indisponível)';
 
   // ── Dicionário EN ───────────────────────────────────────────────────────────
   let phonetic = '';
@@ -51,46 +71,24 @@ async function fetchWordData(word) {
       const meaning = entry?.meanings?.[0];
       partOfSpeech = meaning?.partOfSpeech || '—';
 
-      // Até 2 exemplos em inglês (com fallback para definitions sem example)
+      // Até 2 exemplos em inglês — prefere exemplos com frase, senão usa definição
       const defs = meaning?.definitions || [];
-      examples = defs
-        .filter((d) => d.example)
-        .slice(0, 2)
-        .map((d) => ({ en: d.example, pt: '' }));
-
-      // Se não tiver exemplos com texto, pega as primeiras 2 definições
-      if (examples.length === 0) {
-        examples = defs.slice(0, 2).map((d) => ({
-          en: d.definition,
-          pt: '',
-        }));
-      }
+      const withExample = defs.filter((d) => d.example).slice(0, 2);
+      examples =
+        withExample.length > 0
+          ? withExample.map((d) => ({ en: d.example, pt: '' }))
+          : defs.slice(0, 2).map((d) => ({ en: d.definition, pt: '' }));
     } catch (_) { /* silencioso */ }
   }
 
-  // Traduz exemplos EN→PT (paralelo, best-effort)
+  // Traduz exemplos EN→PT com Google Translate (paralelo, best-effort)
   if (examples.length > 0) {
-    const translateExample = async (text) => {
-      try {
-        const r = await fetch(
-          `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|pt-BR`
-        );
-        if (!r.ok) return '';
-        const j = await r.json();
-        const t = j?.responseData?.translatedText;
-        return t && !/ERROR/.test(t) ? t : '';
-      } catch (_) {
-        return '';
-      }
-    };
-
-    const translations = await Promise.allSettled(
-      examples.map((ex) => translateExample(ex.en))
+    const translated = await Promise.allSettled(
+      examples.map((ex) => googleTranslate(ex.en))
     );
-
     examples = examples.map((ex, i) => ({
       en: ex.en,
-      pt: translations[i].status === 'fulfilled' ? translations[i].value : '',
+      pt: translated[i].status === 'fulfilled' ? translated[i].value : '',
     }));
   }
 
@@ -275,7 +273,7 @@ const WordMiningCard = ({ data, loading, position, onClose }) => {
           <span className="flex-1" />
           {loading
             ? <span className="text-[9px] text-pg-accent/30 animate-pulse">buscando…</span>
-            : <span className="text-[9px] text-white/15 font-mono">Free Dictionary + MyMemory</span>
+            : <span className="text-[9px] text-white/15 font-mono">Free Dictionary + Google Translate</span>
           }
         </div>
       </div>
